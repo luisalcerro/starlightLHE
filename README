@@ -1,0 +1,57 @@
+# Run STARlight simulation in lxplus by using LHE files
+# I recommend you to do steps 1 and 2 in your local computer
+
+
+# *** 1. Generate STARlight output file (plain text) ***
+  1-1) Install STARlight
+       You can either run "./compileSTARlight.sh 313" to automatically compile the STARlight v3.13 
+       or compile STARlight step by step following the instruction in 'https://starlight.hepforge.org'
+       
+  1-2) Setup the input file
+       a) cd starlightTrunk_v313/build
+       b) cp ../config/slight.in . (In cohJpsiConfigAt5p02TeV directory, there is a pre-defined input file for coherent Jpsi in PbPb@5.02 TeV with interference turned on)
+       c) set the parameters according to your need. Please see details in p6-12 of Readme.pdf under starlightTrunk_v313 OR section 7 of STAR manual [Comput. Phys. Commun. 212 (2017) 258].
+
+  1-3) Generate STARlight output: 
+       a) you can directly run "./starlight" to generate STARlight output after finishing 1-1) and 1-2) steps.
+          Please see the desciption of output in 'https://starlight.hepforge.org' OR section 8 of STAR manual [Comput. Phys. Commun. 212 (2017) 258].
+       b) there is a simple macro, sitting in 'starlightLHE/anaSTARlightOutput' directory, to directly analyze STARlight output
+    
+
+# *** 2. Convert plain STARlight output file to CMS LHE file (take coherent Jpsi as an example) ***
+  To save computing time, the plain STARlight output file with large statistics will be splitted into many small files for job submission in lxplus cluster. The most time consuming step in CMS simulation chain (GENSIM->DIGIRAW->RECO) is DIGIRAW, the input statistics of DIGIRAW step is better not to exceed 2000 for UPC simulation without embedding. One could apply filters in 'plain STARlight output --> LHE' and GENSIM steps, therefore, one needs to evaluate the statistics for each small plain STARlight output file.
+
+  2-1) make a directory (e.g., 'mkdir generateLHE/CohJpsi') under generateLHE directory, copy the generated STARlight output file in step 1-3) to 'CohJpsi' directory, and rename the STARligth output file (e.g., 'mv slight.out slight.CohJpsi.out'). It is better to copy the STARlight configuration file (slight.in) to CohJpsi directory, which can remind people the exact settings in the future for each simulation.
+
+  2-2) under 'generateLHE' directory, execute './splitSTARlight.sh 4000 CohJpsi' to split the large STARlight output file (4000 means each splitted file have 1000 STARlight events). This script simply call 'split' command.
+
+  2-3) under 'generateLHE' directory, execute './convertLHE.sh CohJpsi' to convert splitted STARlight output file to CMS LHE file. This script calls 'convert_SL2LHE.C' macro, one can directly run this macro using 'root -l -b -q convert_SL2LHE.C', of course, a valid input file is needed. In this step, you can apply some additional filter in convert_SL2LHE.C according to your needs, e.g., pair rapidity filter, kinematic filter of daughters etc. The kinematic filter of daughter particle is not recommanded, because you need to estimate acceptance in Jpsi analysis.
+
+
+# *** 3. MC simulation chain (GENSIM->DIGIRAW->RECO) in lxplus ***
+
+  3-1) If one does steps 1 and 2, one needs to copy the generated LHE files to lxplus eos disk (e.g., in my case, the lhe files are stored in '/eos/cms/store/group/phys_heavyions/shuaiy/STARlight/officalMCRequest/')
+
+  3-2) Set up CMS environment (see details in CMS workbook chapter 1.3) in your lxplus work area (In general, the exactly same CMSSW package as that in official real data production will be used. However, CMSSW_10_3_5 is used in the official MC productions for UPC Jpsi analysis. Therefore, the following instruction uses CMSSW_10_3_5)
+       a) source /cvmfs/cms.cern.ch/cmsset_default.sh
+       b) export SCRAM_ARCH=slc7_amd64_gcc700 (set the same slc and gcc version as the needed CMSSW release, check slc and gcc version by using 'scram list -a | grep CMSSW_10_3_5')
+       c) cmsrel CMSSW_10_3_5 # build CMSSW dir, only need to be done once
+       d) cd CMSSW_10_3_5/src
+       e) cmsenv
+
+  3-3) Generate python configration files 
+       a) cd CMSSW_10_3_5/src
+       b) copy everything under 'starlightLHE/scriptForSimulation' dirctory to 'CMSSW_10_3_5/src'
+       c) execute 'scram b -j 8'
+       d) execute './genPythonCfg_cmsDriver.sh' to generate the python configration files for GENSIM(step1), DIGIRAW(step2), and RECO(step3). You can replace the lhe file right after '--filein' by your new generated LHE file.
+       e) move these three python files (step*.py) to 'submitJob' directory and 'cd submitJob'
+       f) do some local test by using 'cmsRun step1_STARlight_LHE_GenSim_cfg.py', 'cmsRun step2_STARlight_Digi_cfg.py', and 'cmsRun step3_STARlight_Reco_cfg.py' for GENSIM, DIGIRAW, and RECO, respectively. 
+          -- The input file of step1 is LHE file generated in 2-3), the input file of step2 is the output file of step2, and the input file of step3 is the output file of step3.
+          -- A kinematic filter (muminusfilter/muplusfilter) of daughter particle is used in GENSIM step, therefore, the produced MC samples cannot be used for acceptance estimation.
+
+  3-4) Submit crab jobs to lxplus grid (do NOT directly submit the crab job !!!, the input lists or datasets have huge statistics). Please see details in 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCRAB3Tutorial'
+       a) authenticate grid certificate by executing 'voms-proxy-init --rfc --voms cms' (make sure you already register the CMS VOMS, see details in 'https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideLcgAccess')
+       NOTE: replace 'shuaiy' by your lxplus usename in config.Data.outLFNDirBase in the configuration files for following steps b)-d)
+       b) executing 'crab submit crabMultiConfig_STARlight_GenSkim.py' to submit GENSIM jobs to lxplus cluster (better do dryrun before real submission)
+       c) Once the jobs of GENSIM step are finish, feed the dataset of GENSIM to DIGIRAW configration file, and then executing 'crab submit crabMultiConfig_STARlight_Digi.py' to submit DIGIRAW jobs
+       d) Once the jobs of DIGIRAW step are finish, feed the dataset of DIGIRAW to RECO configration file, and then executing 'crab submit crabMultiConfig_STARlight_Reco.py' to submit RECO jobs
