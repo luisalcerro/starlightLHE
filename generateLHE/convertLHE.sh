@@ -2,12 +2,12 @@
 #date
 
 if [ $# != 1 ]; then
-    echo "Please provide particle species name: \"LowMassGammaGamma\" OR \"CohJpsi\" OR \"CohJpsi_0n0n\" OR \"CohJpsi_0nXn\" OR \"CohJpsi_XnXn\" OR \"InCohJpsi\" OR \"CohPsi2S\" OR \"InCohPsi2S\" !!!"
+    echo "Please provide particle species name: \"LowMassGammaGamma\" OR \"CohY1S\" OR \"CohY1S_0n0n\" OR \"CohY1S_0nXn\" OR \"CohY1S_XnXn\" OR \"InCohY1S\" OR \"CohY2S\" OR \"InCohY2S\" OR \"FeedDownY2S\"  !!!"
     exit
 fi
 
-if [ $1 != "LowMassGammaGamma" -a $1 != "CohJpsi" -a $1 != "CohJpsi_0n0n" -a $1 != "CohJpsi_0nXn" -a $1 != "CohJpsi_XnXn" -a $1 != "InCohJpsi" -a $1 != "CohPsi2S" -a $1 != "InCohPsi2S" ]; then
-    echo "The particle species name should be: \"LowMassGammaGamma\" OR \"CohJpsi\" OR \"CohJpsi_0n0n\" OR \"CohJpsi_0nXn\" OR \"InCohJpsi\" OR \"CohPsi2S\" OR \"InCohPsi2S\" !!!"
+if [ $1 != "LowMassGammaGamma" -a $1 != "CohY1S" -a $1 != "CohY1S_0n0n" -a $1 != "CohY1S_0nXn" -a $1 != "CohY1S_XnXn" -a $1 != "InCohY1S" -a $1 != "CohY2S" -a $1 != "InCohY2S" -a $1 != "FeedDownY2S" ]; then
+    echo "The particle species name should be: \"LowMassGammaGamma\" OR \"CohY1S\" OR \"CohY1S_0n0n\" OR \"CohY1S_0nXn\" OR \"InCohY1S\" OR \"CohY2S\" OR \"InCohY2S\" OR \"InCohY2S\ OR \"FeedDownY2S\" !!!"
     exit
 fi
 

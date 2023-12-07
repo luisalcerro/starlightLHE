@@ -115,7 +115,7 @@ void convert_SL2LHE(string infilename = "output_all/slight_CohPsi2S_4Feeddown_00
                 TLorentzVector motherFourMom = fourMom1 + fourMom2;
                 double y = motherFourMom.Rapidity();
 
-                if(TMath::Abs(y)>1.45 && TMath::Abs(y)<2.45){
+                if(TMath::Abs(y)>0.0 && TMath::Abs(y)<12.0){
                     if(nAccEvts) output << "</event>" << endl;
                     output << "<event>" << endl;
 
